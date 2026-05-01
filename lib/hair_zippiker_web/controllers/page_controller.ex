@@ -20,13 +20,13 @@ defmodule HairZippikerWeb.PageController do
 
     current_scope = conn.assigns[:current_scope]
 
-    # Role-based redirection logic for the landing page
+    # Role-based redirection logic updated to match your router paths
     case current_scope do
-      %{user: %{role: :admin}} ->
-        redirect(conn, to: ~p"/admin")
+      %{user: %{role: role}} when role in [:admin, "admin"] ->
+        redirect(conn, to: ~p"/admin/dashboard")
 
-      %{user: %{role: :employee}} ->
-        redirect(conn, to: ~p"/employee/dashboard")
+      %{user: %{role: role}} when role in [:employee, "employee"] ->
+        redirect(conn, to: ~p"/employer/portal")
 
       _ ->
         render(conn, :home,
@@ -37,6 +37,8 @@ defmodule HairZippikerWeb.PageController do
         )
     end
   end
+
+  # --- HELPERS ---
 
   defp visitor_name(%{name: name}, _current_scope) when is_binary(name) and name != "", do: name
 
@@ -49,7 +51,6 @@ defmodule HairZippikerWeb.PageController do
 
   defp visitor_name(_customer, _current_scope), do: "Guest"
 
-  # Mock data removed - strictly database results
   defp home_styles do
     Services.list_public_haircuts()
     |> Enum.map(&service_to_style/1)
@@ -83,6 +84,8 @@ defmodule HairZippikerWeb.PageController do
 
   defp format_price(price) when is_binary(price), do: price
   defp format_price(_price), do: "0"
+
+  # --- ACTIONS ---
 
   def book(conn, _params) do
     with {:ok, conn} <- require_payment_phone(conn) do

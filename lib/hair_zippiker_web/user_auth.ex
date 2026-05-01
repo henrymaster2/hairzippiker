@@ -19,30 +19,31 @@ defmodule HairZippikerWeb.UserAuth do
 
   @doc """
   Logs the user in.
-  Redirects based on the user's role (Admin vs Employer).
+  Redirects based on the user's role (Admin vs Employee).
   """
   def log_in_user(conn, user, params \\ %{}) do
     user_return_to = get_session(conn, :user_return_to)
 
-    signed_in_path =
-      if signed_in_as?(conn, user), do: ~p"/users/settings", else: role_based_redirect(user)
+    # Simplified: Always use role-based redirect unless a return_to path exists
+    signed_in_path = role_based_redirect(user)
 
     conn
     |> create_or_extend_session(user, params)
-    # This logic checks for a return_to path, otherwise uses our smart redirect
     |> redirect(to: user_return_to || signed_in_path)
   end
 
-  defp signed_in_as?(conn, user) do
-    match?(%{user: %{id: id}} when id == user.id, conn.assigns[:current_scope])
-  end
-
   # Internal helper to decide where a user goes based on their role
+  # Matches the routes defined in your router.ex
   defp role_based_redirect(user) do
     case user.role do
-      "admin" -> ~p"/admin/dashboard"
-      "employer" -> ~p"/employer/portal"
-      _ -> ~p"/"
+      role when role in ["admin", :admin] -> 
+        ~p"/admin/dashboard"
+      
+      role when role in ["employee", :employee] -> 
+        ~p"/employer/portal"
+        
+      _ -> 
+        ~p"/"
     end
   end
 
