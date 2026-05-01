@@ -20,12 +20,22 @@ defmodule HairZippikerWeb.PageController do
 
     current_scope = conn.assigns[:current_scope]
 
-    render(conn, :home,
-      customer: customer,
-      current_scope: current_scope,
-      visitor_name: visitor_name(customer, current_scope),
-      styles: home_styles()
-    )
+    # Role-based redirection logic for the landing page
+    case current_scope do
+      %{user: %{role: :admin}} ->
+        redirect(conn, to: ~p"/admin")
+
+      %{user: %{role: :employee}} ->
+        redirect(conn, to: ~p"/employee/dashboard")
+
+      _ ->
+        render(conn, :home,
+          customer: customer,
+          current_scope: current_scope,
+          visitor_name: visitor_name(customer, current_scope),
+          styles: home_styles()
+        )
+    end
   end
 
   defp visitor_name(%{name: name}, _current_scope) when is_binary(name) and name != "", do: name
@@ -39,7 +49,7 @@ defmodule HairZippikerWeb.PageController do
 
   defp visitor_name(_customer, _current_scope), do: "Guest"
 
-  # Updated to strictly fetch from the database
+  # Mock data removed - strictly database results
   defp home_styles do
     Services.list_public_haircuts()
     |> Enum.map(&service_to_style/1)
@@ -252,11 +262,14 @@ defmodule HairZippikerWeb.PageController do
   defp parse_quantity(_quantity, _stock), do: {:error, :invalid_quantity}
 
   defp payable_style(id) do
-    with {:ok, style_id} <- parse_id(id),
-         service when not is_nil(service) <- Services.get_public_haircut(style_id) do
-      {:ok, service_to_style(service)}
-    else
-      _error -> {:error, :invalid_style}
+    case parse_id(id) do
+      {:ok, style_id} ->
+        case Services.get_public_haircut(style_id) do
+          nil -> {:error, :invalid_style}
+          service -> {:ok, service_to_style(service)}
+        end
+
+      {:error, :invalid_style} -> {:error, :invalid_style}
     end
   end
 
