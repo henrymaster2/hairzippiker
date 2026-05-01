@@ -1,0 +1,166 @@
+<main data-shop-payment-page class="min-h-screen bg-black px-6 py-8 text-white">
+  <div class="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl flex-col">
+    <header class="flex items-center justify-between gap-4">
+      <.link
+        navigate={~p"/"}
+        class="text-3xl font-black uppercase italic leading-none tracking-tighter sm:text-4xl"
+      >
+        Hair<span class="text-blue-600">Zippiker</span>
+      </.link>
+      <div class="flex items-center gap-2">
+        <.link
+          navigate={~p"/"}
+          class="hidden rounded-full border border-white/10 px-5 py-3 text-[10px] font-black uppercase tracking-[0.22em] text-zinc-300 transition hover:bg-white/10 hover:text-white sm:block"
+        >
+          Styles
+        </.link>
+        <.link
+          navigate={~p"/book"}
+          class="rounded-full border border-white/10 px-5 py-3 text-[10px] font-black uppercase tracking-[0.22em] text-zinc-300 transition hover:bg-white/10 hover:text-white"
+        >
+          Book
+        </.link>
+      </div>
+    </header>
+
+    <section class="py-14">
+      <div class="max-w-3xl">
+        <p class="mb-4 text-xs font-black uppercase tracking-[0.35em] text-blue-500">
+          Shop
+        </p>
+        <h1 class="text-5xl font-black uppercase italic leading-none tracking-tighter sm:text-7xl">
+          Grooming Products
+        </h1>
+        <p class="mt-6 max-w-xl text-sm leading-7 text-zinc-400">
+          Products added by the admin from inventory appear here automatically for customers to browse.
+        </p>
+      </div>
+    </section>
+
+    <%= if @products == [] do %>
+      <section class="grid flex-1 place-items-center rounded-[2rem] border border-white/10 bg-white/[0.04] p-10 text-center backdrop-blur-xl">
+        <div class="max-w-md">
+          <p class="text-[10px] font-black uppercase tracking-[0.28em] text-blue-500">
+            No Stock Yet
+          </p>
+          <h2 class="mt-4 text-3xl font-black uppercase italic tracking-tighter">
+            Shop is waiting for products
+          </h2>
+          <p class="mt-4 text-sm leading-6 text-zinc-500">
+            Once an admin adds products in inventory, they will show up here.
+          </p>
+        </div>
+      </section>
+    <% else %>
+      <section class="grid grid-cols-1 gap-6 pb-16 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <%= for product <- @products do %>
+          <article
+            id={"shop-product-#{product.id}"}
+            data-shop-product
+            data-product-id={product.id}
+            data-product-name={product.name}
+            data-product-price={product.selling_price}
+            data-product-stock={product.stock}
+            class="group flex flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xl transition hover:-translate-y-1 hover:border-blue-500/40 hover:bg-white/[0.07]"
+          >
+            <div class="relative aspect-square overflow-hidden rounded-[1.5rem] bg-zinc-900">
+              <%= if product.image_url && product.image_url != "" do %>
+                <img
+                  src={product.image_url}
+                  alt={product.name}
+                  class="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                />
+              <% else %>
+                <div class="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,_rgba(37,99,235,0.22),_transparent_45%),#111]">
+                  <.icon name="hero-shopping-bag" class="size-12 text-white/20" />
+                </div>
+              <% end %>
+
+              <div class="absolute left-3 top-3 rounded-full bg-black/70 px-3 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white backdrop-blur-md">
+                {product.stock} in stock
+              </div>
+            </div>
+
+            <div class="flex flex-1 flex-col px-2 pb-2 pt-5">
+              <p class="mb-2 text-[9px] font-black uppercase tracking-[0.24em] text-blue-500">
+                {product.type}
+              </p>
+              <h2 class="line-clamp-2 text-lg font-black uppercase italic leading-tight tracking-tighter text-white">
+                {product.name}
+              </h2>
+
+              <div class="mt-auto pt-6">
+                <div class="flex items-end justify-between gap-4">
+                  <div>
+                    <p class="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                      Unit Price
+                    </p>
+                    <p class="text-2xl font-black italic text-white">
+                      KSh {format_price(product.selling_price)}
+                    </p>
+                  </div>
+                  <p
+                    data-product-total
+                    class="shrink-0 rounded-full bg-white px-3 py-2 text-xs font-black text-black"
+                  >
+                    KSh {format_price(product.selling_price)}
+                  </p>
+                </div>
+
+                <div class="mt-5 flex items-center gap-2">
+                  <button
+                    id={"product-#{product.id}-quantity-minus"}
+                    type="button"
+                    data-quantity-minus
+                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/40 text-white transition hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={product.stock <= 0}
+                    aria-label="Decrease quantity"
+                  >
+                    <.icon name="hero-minus" class="size-4" />
+                  </button>
+                  <input
+                    id={"product-#{product.id}-quantity"}
+                    data-product-quantity
+                    type="number"
+                    min="1"
+                    max={product.stock}
+                    value="1"
+                    class="h-11 min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/40 px-3 text-center text-sm font-black text-white outline-none transition focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={product.stock <= 0}
+                    aria-label="Quantity"
+                  />
+                  <button
+                    id={"product-#{product.id}-quantity-plus"}
+                    type="button"
+                    data-quantity-plus
+                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/40 text-white transition hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={product.stock <= 0}
+                    aria-label="Increase quantity"
+                  >
+                    <.icon name="hero-plus" class="size-4" />
+                  </button>
+                </div>
+
+                <button
+                  id={"product-#{product.id}-buy-button"}
+                  type="button"
+                  data-product-buy-button
+                  class="mt-3 w-full rounded-2xl bg-blue-600 px-4 py-4 text-[9px] font-black uppercase tracking-[0.22em] text-white transition hover:-translate-y-0.5 hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/30"
+                  disabled={product.stock <= 0}
+                >
+                  {if product.stock > 0, do: "Buy With STK Push", else: "Sold Out"}
+                </button>
+                <p
+                  data-product-payment-status
+                  class="mt-3 min-h-5 text-xs font-bold leading-5 text-zinc-500"
+                  aria-live="polite"
+                >
+                </p>
+              </div>
+            </div>
+          </article>
+        <% end %>
+      </section>
+    <% end %>
+  </div>
+</main>

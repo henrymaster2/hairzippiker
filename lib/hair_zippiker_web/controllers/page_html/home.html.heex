@@ -1,0 +1,368 @@
+<main
+  id="salon-home"
+  data-salon-home
+  data-visitor-name={@visitor_name}
+  data-active-style="0"
+  data-view="home"
+  class="relative min-h-screen w-full overflow-hidden bg-black font-sans text-white"
+>
+  <%!-- Background --%>
+  <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.28),_transparent_36%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.14),_transparent_32%),#050505] z-0">
+  </div>
+  <div class="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black via-black/70 to-transparent z-0">
+  </div>
+
+  <%= if @customer || (@current_scope && @current_scope.user) do %>
+    <%!-- ####### TOP HEADER ####### --%>
+    <header class="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-5 py-5 sm:px-8 pointer-events-none">
+      <.link navigate={~p"/"} class="pointer-events-auto max-w-[76%]">
+        <h1 class="text-4xl font-black uppercase italic leading-none tracking-tighter sm:text-5xl md:text-3xl lg:text-4xl">
+          Hair<span class="text-blue-600">Zippiker</span>
+        </h1>
+        <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 sm:text-sm md:text-[11px] md:tracking-[0.24em]">
+          <span data-dynamic-greeting>Welcome</span>, <span>{@visitor_name}</span>
+        </p>
+      </.link>
+
+      <nav class="hidden md:flex pointer-events-auto items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1 backdrop-blur-2xl">
+        <.link
+          navigate={~p"/"}
+          class="rounded-full bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-black transition hover:bg-blue-100"
+        >
+          Styles
+        </.link>
+        <.link
+          navigate={~p"/book"}
+          class="rounded-full px-5 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-zinc-400 transition hover:bg-white/10 hover:text-white"
+        >
+          Book
+        </.link>
+        <.link
+          navigate={~p"/shop"}
+          class="rounded-full px-5 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-zinc-400 transition hover:bg-white/10 hover:text-white"
+        >
+          Shop
+        </.link>
+      </nav>
+
+      <button
+        id="profile-drawer-open"
+        type="button"
+        data-drawer-open
+        class="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/10 backdrop-blur-md transition hover:bg-white/20"
+        aria-label="Open profile drawer"
+      >
+        <.icon name="hero-user" class="size-4" />
+      </button>
+    </header>
+
+    <%!-- ####### MAIN CONTENT ####### --%>
+    <section class="relative z-10 flex min-h-screen items-center justify-center px-5 pb-28 pt-32 sm:pt-36 md:pb-12 md:pt-32">
+      <%!-- 
+        SLIDER CONTAINER 
+        The snap-y class is removed via JS when details are open to allow full reading
+      --%>
+      <div
+        id="style-slider-container"
+        class="relative h-[calc(100dvh-15rem)] min-h-[520px] w-full max-w-5xl overflow-y-auto snap-y snap-mandatory scroll-smooth sm:h-[calc(100dvh-13rem)] md:h-[640px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+      >
+        <%= for {style, index} <- Enum.with_index(@styles) do %>
+          <article
+            id={"style-card-#{style.id}"}
+            data-style-card
+            data-style-index={index}
+            class="relative flex min-h-full w-full shrink-0 snap-start snap-always items-center justify-center py-10 transition-opacity duration-300"
+          >
+            <div
+              data-style-swipe-zone
+              class="grid min-h-full w-full items-center gap-6 py-4 md:min-h-0 md:grid-cols-[0.9fr_1.1fr] md:gap-14 md:py-0"
+            >
+              <div class="relative mx-auto flex h-56 w-56 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] p-3 shadow-[0_0_80px_rgba(37,99,235,0.18)] min-[380px]:h-64 min-[380px]:w-64 sm:h-80 sm:w-80 md:h-[430px] md:w-[430px] md:p-4">
+                <div class="absolute inset-6 rounded-full border border-blue-500/20"></div>
+                <img
+                  src={style.img}
+                  alt={style.name}
+                  class="relative h-full w-full rounded-full object-cover grayscale-[40%] shadow-2xl shadow-black/60"
+                />
+              </div>
+
+              <div class="mx-auto w-full max-w-xl text-center md:text-left">
+                <p class="mb-3 text-xs font-black uppercase tracking-[0.35em] text-blue-500">
+                  Style {String.pad_leading(Integer.to_string(index + 1), 2, "0")}
+                </p>
+                <h2 class="text-4xl font-black uppercase italic leading-none tracking-tighter min-[380px]:text-5xl sm:text-6xl md:text-7xl">
+                  {style.name}
+                </h2>
+
+                <%!-- 
+                   UPDATED DETAILS: 
+                   Added onToggle to handle the snapping behavior 
+                --%>
+                <details
+                  class="group mt-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xl transition-all duration-300"
+                  ontoggle="
+                    const container = document.getElementById('style-slider-container');
+                    if(this.open) {
+                      container.classList.remove('snap-y', 'snap-mandatory');
+                      this.scrollIntoView({behavior: 'smooth', block: 'start'});
+                    } else {
+                      container.classList.add('snap-y', 'snap-mandatory');
+                    }
+                  "
+                >
+                  <summary
+                    id={"style-details-toggle-#{style.id}"}
+                    class="flex w-full cursor-pointer list-none items-center justify-between rounded-[1.5rem] bg-white px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.22em] text-black transition hover:bg-blue-100 [&::-webkit-details-marker]:hidden"
+                  >
+                    <span>Details</span>
+                    <.icon
+                      name="hero-information-circle"
+                      class="size-5 transition-transform group-open:rotate-180"
+                    />
+                  </summary>
+
+                  <div
+                    id={"style-details-#{style.id}"}
+                    class="mt-4 rounded-[1.5rem] border border-white/10 bg-black/40 p-5"
+                  >
+                    <p class="mb-5 text-sm leading-6 text-zinc-400">
+                      {style.description}
+                    </p>
+                    <div class="flex items-center justify-between gap-4">
+                      <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">
+                        Service Price
+                      </span>
+                      <span class="text-2xl font-black italic">KSh {style.price}</span>
+                    </div>
+                    <%= if style.barber do %>
+                      <p class="mt-3 text-sm leading-6 text-zinc-500">
+                        Posted by {style.barber}
+                      </p>
+                    <% else %>
+                      <p class="mt-3 text-sm leading-6 text-zinc-500">
+                        Standard service includes consultation, wash, cut, and styling.
+                      </p>
+                    <% end %>
+                    <button
+                      id={"style-choose-#{style.id}"}
+                      type="button"
+                      data-style-choose
+                      data-style-id={style.id}
+                      data-style-name={style.name}
+                      data-style-price={style.price}
+                      data-style-img={style.img}
+                      class="mt-5 w-full rounded-2xl bg-blue-600 px-6 py-4 text-[10px] font-black uppercase tracking-[0.24em] text-white shadow-lg shadow-blue-900/30 transition hover:-translate-y-0.5 hover:bg-blue-500"
+                    >
+                      Choose Style
+                    </button>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </article>
+        <% end %>
+
+        <div class="pointer-events-none absolute right-0 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-3 md:flex">
+          <button
+            id="style-previous"
+            type="button"
+            onclick="document.getElementById('style-slider-container').scrollBy({top: -400, behavior: 'smooth'})"
+            class="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white hover:text-black"
+            aria-label="Previous style"
+          >
+            <.icon name="hero-chevron-up" class="size-5" />
+          </button>
+          <button
+            id="style-next"
+            type="button"
+            onclick="document.getElementById('style-slider-container').scrollBy({top: 400, behavior: 'smooth'})"
+            class="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-xl transition hover:translate-y-0.5 hover:bg-white hover:text-black"
+            aria-label="Next style"
+          >
+            <.icon name="hero-chevron-down" class="size-5" />
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <%!-- ####### PROFILE DRAWER ####### --%>
+    <div
+      id="profile-drawer-backdrop"
+      data-drawer-backdrop
+      hidden
+      class="fixed inset-0 z-[100] bg-black/80 opacity-0 backdrop-blur-md transition-opacity duration-700 ease-out"
+    >
+    </div>
+    <aside
+      id="profile-drawer"
+      data-profile-drawer
+      hidden
+      class="fixed inset-y-0 right-0 z-[110] flex w-full translate-x-full flex-col border-l border-white/10 bg-zinc-950/95 p-8 shadow-[-40px_0_100px_rgba(0,0,0,0.45)] backdrop-blur-2xl transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] md:w-[420px]"
+      aria-label="Profile drawer"
+      aria-hidden="true"
+    >
+      <div class="mb-10 flex items-center justify-between">
+        <h2 class="text-2xl font-black uppercase italic tracking-tighter">Your Profile</h2>
+        <button
+          id="profile-drawer-close"
+          type="button"
+          data-drawer-close
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 transition hover:bg-white/10"
+          aria-label="Close profile drawer"
+        >
+          <.icon name="hero-x-mark" class="size-5" />
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 space-y-6 overflow-y-auto pr-1">
+        <div class="rounded-2xl border border-white/5 bg-white/5 p-6">
+          <p class="mb-1 text-[8px] font-black uppercase tracking-widest text-blue-500">
+            Active Client
+          </p>
+          <p class="text-lg font-bold">
+            {if @customer, do: @customer.name, else: "Staff Member"}
+          </p>
+        </div>
+
+        <div class="rounded-2xl border border-blue-500/20 bg-blue-600/10 p-6">
+          <h3 class="mb-4 text-[10px] font-black uppercase tracking-[0.2em]">
+            Current Selection
+          </h3>
+
+          <div data-selected-style hidden class="space-y-4">
+            <div class="flex items-center gap-4">
+              <img
+                data-selected-style-img
+                src=""
+                alt=""
+                class="h-16 w-16 rounded-full object-cover"
+              />
+              <div>
+                <p data-selected-style-name class="font-black uppercase italic"></p>
+                <p data-selected-style-price class="font-bold text-blue-500"></p>
+              </div>
+            </div>
+
+            <div class="border-t border-white/5 pt-4">
+              <p class="mb-4 text-[10px] font-bold uppercase italic text-zinc-400">
+                Send an M-Pesa prompt to your phone to pay for this style.
+              </p>
+              <button
+                id="selected-style-stk-push"
+                type="button"
+                data-stk-push-button
+                class="w-full rounded-xl bg-white py-4 text-[10px] font-black uppercase tracking-widest text-black transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Send STK Push
+              </button>
+              <p
+                data-stk-push-status
+                class="mt-3 text-xs font-bold leading-5 text-zinc-500"
+                aria-live="polite"
+              >
+              </p>
+            </div>
+          </div>
+
+          <p data-selected-style-empty class="text-xs font-bold italic text-zinc-600">
+            No style selected yet.
+          </p>
+        </div>
+      </div>
+
+      <div class="shrink-0 border-t border-white/10 pt-6">
+        <%= if @customer do %>
+          <.link
+            href={~p"/exit_salon"}
+            method="delete"
+            class="block w-full rounded-xl border border-red-600/30 bg-red-600/20 py-4 text-center text-[10px] font-black uppercase tracking-widest text-red-500 transition hover:bg-red-600/30"
+          >
+            Exit Salon
+          </.link>
+        <% end %>
+      </div>
+    </aside>
+
+    <%!-- ####### MOBILE BOTTOM NAV ####### --%>
+    <nav class="fixed bottom-0 z-[90] w-full p-5 md:hidden" aria-label="Salon navigation">
+      <div class="flex items-center justify-between rounded-[30px] border border-white/10 bg-black/60 p-2 backdrop-blur-2xl">
+        <.link
+          navigate={~p"/"}
+          id="salon-nav-home"
+          class="flex flex-1 justify-center rounded-[25px] bg-white py-4 text-black transition-all duration-300"
+          aria-label="Show styles"
+        >
+          <.icon name="hero-home" class="size-5" />
+        </.link>
+
+        <.link
+          navigate={~p"/book"}
+          id="salon-nav-book"
+          class="flex flex-1 justify-center rounded-[25px] py-4 text-zinc-500 transition-all duration-300 hover:text-white"
+          aria-label="Book a haircut"
+        >
+          <.icon name="hero-calendar-days" class="size-5" />
+        </.link>
+
+        <.link
+          navigate={~p"/shop"}
+          id="salon-nav-shop"
+          class="flex flex-1 justify-center rounded-[25px] py-4 text-zinc-500 transition-all duration-300 hover:text-white"
+          aria-label="Open shop"
+        >
+          <.icon name="hero-shopping-bag" class="size-5" />
+        </.link>
+
+        <button
+          id="salon-nav-profile"
+          type="button"
+          data-drawer-open
+          class="flex flex-1 justify-center rounded-[25px] py-4 text-zinc-500 transition-all duration-300"
+          aria-label="Open profile drawer"
+        >
+          <.icon name="hero-user" class="size-5" />
+        </button>
+      </div>
+    </nav>
+  <% else %>
+    <%!-- LOGIN GATE --%>
+    <div class="fixed inset-0 z-[200] flex items-center justify-center bg-black p-6">
+      <div class="w-full max-w-sm text-center">
+        <div class="mb-12">
+          <h1 class="text-4xl font-black uppercase italic tracking-tighter">
+            Hair<span class="text-blue-600">Zippiker</span>
+          </h1>
+        </div>
+        <form id="enter-salon-form" action={~p"/enter_salon"} method="POST" class="space-y-4">
+          <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+          <input
+            name="customer[name]"
+            required
+            placeholder="FULL NAME"
+            class="w-full rounded-2xl border border-white/10 bg-white/5 p-5 text-xs font-bold text-white outline-none transition-all focus:border-blue-600"
+          />
+          <input
+            name="customer[email]"
+            type="email"
+            required
+            placeholder="EMAIL ADDRESS"
+            class="w-full rounded-2xl border border-white/10 bg-white/5 p-5 text-xs font-bold text-white outline-none transition-all focus:border-blue-600"
+          />
+          <input
+            name="customer[phone]"
+            type="tel"
+            required
+            placeholder="PHONE"
+            class="w-full rounded-2xl border border-white/10 bg-white/5 p-5 text-xs font-bold text-white outline-none transition-all focus:border-blue-600"
+          />
+          <button
+            type="submit"
+            class="mt-4 w-full rounded-2xl bg-blue-600 py-5 text-xs font-black uppercase tracking-widest text-white transition hover:bg-blue-500"
+          >
+            Enter Salon
+          </button>
+        </form>
+      </div>
+    </div>
+  <% end %>
+</main>
