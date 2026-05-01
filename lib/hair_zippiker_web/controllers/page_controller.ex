@@ -1,6 +1,7 @@
 defmodule HairZippikerWeb.PageController do
   use HairZippikerWeb, :controller
 
+  # We alias your Repo and the new Customer schema we are creating
   alias HairZippiker.Repo
   alias HairZippiker.Accounts.Customer
   alias HairZippiker.Bookings
@@ -9,8 +10,10 @@ defmodule HairZippikerWeb.PageController do
   alias HairZippiker.Services
 
   def home(conn, _params) do
+    # 1. Check if there is a customer_id in the session
     customer_id = get_session(conn, :customer_id)
 
+    # 2. Fetch the customer if the ID exists, otherwise return nil
     customer =
       if customer_id do
         Repo.get(Customer, customer_id)
@@ -20,22 +23,14 @@ defmodule HairZippikerWeb.PageController do
 
     current_scope = conn.assigns[:current_scope]
 
-    # Role-based redirection logic for the landing page
-    case current_scope do
-      %{user: %{role: :admin}} ->
-        redirect(conn, to: ~p"/admin")
-
-      %{user: %{role: :employee}} ->
-        redirect(conn, to: ~p"/employee/dashboard")
-
-      _ ->
-        render(conn, :home,
-          customer: customer,
-          current_scope: current_scope,
-          visitor_name: visitor_name(customer, current_scope),
-          styles: home_styles()
-        )
-    end
+    # 3. We pass customer and display name data to the template instead of
+    # directly reaching through assigns there.
+    render(conn, :home,
+      customer: customer,
+      current_scope: current_scope,
+      visitor_name: visitor_name(customer, current_scope),
+      styles: home_styles()
+    )
   end
 
   defp visitor_name(%{name: name}, _current_scope) when is_binary(name) and name != "", do: name
@@ -49,10 +44,11 @@ defmodule HairZippikerWeb.PageController do
 
   defp visitor_name(_customer, _current_scope), do: "Guest"
 
-  # Mock data removed - strictly database results
   defp home_styles do
-    Services.list_public_haircuts()
-    |> Enum.map(&service_to_style/1)
+    case Services.list_public_haircuts() do
+      [] -> default_styles()
+      styles -> Enum.map(styles, &service_to_style/1)
+    end
   end
 
   defp service_to_style(service) do
@@ -66,6 +62,42 @@ defmodule HairZippikerWeb.PageController do
         service.description || "A polished cut built for clean lines and a crisp finish.",
       barber: service.user && service.user.full_name
     }
+  end
+
+  defp default_styles do
+    [
+      %{
+        id: "starter-signature-fade",
+        name: "Signature Fade",
+        price: "1,500",
+        amount: 1500,
+        img:
+          "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?q=80&w=1588&auto=format&fit=crop",
+        description:
+          "A polished cut built for clean lines, confident movement, and a crisp finish before you leave the chair.",
+        barber: nil
+      },
+      %{
+        id: "starter-classic-taper",
+        name: "Classic Taper",
+        price: "1,200",
+        amount: 1200,
+        img:
+          "https://images.unsplash.com/photo-1621605815841-aa897bd07b5d?q=80&w=1000&auto=format&fit=crop",
+        description: "A balanced taper with clean edges and natural shape for everyday polish.",
+        barber: nil
+      },
+      %{
+        id: "starter-buzz-cut",
+        name: "Buzz Cut",
+        price: "800",
+        amount: 800,
+        img:
+          "https://images.unsplash.com/photo-1503910358245-44a77ba73699?q=80&w=1000&auto=format&fit=crop",
+        description: "A low-maintenance cut with sharp finishing and confident simplicity.",
+        barber: nil
+      }
+    ]
   end
 
   defp default_style_image do
@@ -269,7 +301,11 @@ defmodule HairZippikerWeb.PageController do
           service -> {:ok, service_to_style(service)}
         end
 
-      {:error, :invalid_style} -> {:error, :invalid_style}
+      {:error, :invalid_style} ->
+        case Enum.find(default_styles(), &(&1.id == id)) do
+          nil -> {:error, :invalid_style}
+          style -> {:ok, style}
+        end
     end
   end
 
@@ -296,13 +332,19 @@ defmodule HairZippikerWeb.PageController do
     end
   end
 
+  @doc """
+  Handles the 'Gate Pass' form submission.
+  It saves the customer to the database and sets the session.
+  """
   def enter_salon(conn, %{"customer" => customer_params}) do
+    # Create a changeset for the new customer
     changeset = Customer.changeset(%Customer{}, customer_params)
 
     case Repo.insert(changeset) do
       {:ok, customer} ->
         conn
         |> put_flash(:info, "Welcome to the Salon!")
+        # This is the "Gate Pass" key
         |> put_session(:customer_id, customer.id)
         |> redirect(to: ~p"/")
 
@@ -313,6 +355,9 @@ defmodule HairZippikerWeb.PageController do
     end
   end
 
+  @doc """
+  Clears the customer session (Logout for customers).
+  """
   def exit_salon(conn, _params) do
     conn
     |> delete_session(:customer_id)
